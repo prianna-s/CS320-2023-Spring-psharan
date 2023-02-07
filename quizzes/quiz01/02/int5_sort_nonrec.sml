@@ -49,11 +49,22 @@ int5_sort_nr(xs) for every 5-tuple xs of the type int5.
 *)
 (* ****** ****** *)
 
+fun issorted [] = true  |
+      issorted [x] = true |
+      issorted (x::y::t) = x <= y andalso issorted(y::t);
+
+(* Function that does the bubbling *)
+fun bubble [] = [] |
+    bubble [x] = [x] |
+    bubble (x::y::t) = if (x > y) then y::(bubble (x::t))
+       else x::(bubble (y::t));
+
 fun
 int5_sort_nr(xs: int5): int5 =
 (*
 Please Give your implementation as follows:
 *)
+    bubbleSort int5 = if (issorted int5) then int5 else bubbleSort (bubble int5);
 
 
 (* ****** ****** *)
