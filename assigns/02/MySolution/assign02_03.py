@@ -25,7 +25,7 @@ def merge(ys, zs):
     if mylist_nilq(ys):
         return zs
     elif mylist_nilq(zs):
-            return ys
+        return ys
     else:
         if ys.get_cons1() <= zs.get_cons1():
             return mylist_cons(ys.get_cons1(), merge(ys.get_cons2(), zs))
