@@ -30,12 +30,10 @@ exception ZERO of int
     fun loop(x: int): int =
     if f0(x) = 0
     then raise ZERO(x)
-    else if f0(~x) = 0
-    then raise ZERO(~x)
+    else if f0(~1 * x) = 0
+    then raise ZERO(~1 * x)
     else
     loop (x+1)
 in
     loop(0) handle ZERO(x) =>x
 end
-
-
