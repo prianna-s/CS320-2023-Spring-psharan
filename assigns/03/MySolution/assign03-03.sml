@@ -20,6 +20,11 @@ list_tabulate(n: int, f: int -> 'a): 'a list
 
 (* end of [CS320-2023-Spring-assign03-03.sml] *)
 
-fun loop( f: int -> 'a, finish: int): 'a list = 
-	if finish = 0 then [] 
-	else loop(f, finish - 1) :: f(finish) 
+fun loop( f: int -> 'a, start: int, finish: int): 'a list = 
+	if start = finish then [] 
+	else f(start) :: loop(f, start+1, finish)
+
+fun list_tabulate(n: int, f: int-> 'a): 'a list = 
+    loop(f, 0, n)
+
+    
