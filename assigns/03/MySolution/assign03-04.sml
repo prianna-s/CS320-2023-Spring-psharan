@@ -19,3 +19,33 @@ fun list_longest_ascend(xs: int list): int list
 (* ****** ****** *)
 
 (* end of [CS320-2023-Spring-assign03-04.sml] *)
+fun checkLength (xs: int list, ys: int list): int list =
+    if list_length(xs) >= list_length(ys)
+    then xs
+    else ys
+
+fun longest_tail (xs: int list): int list =
+    case xs of 
+    [] => []
+    |
+    [x] => [x]
+    |
+    x1::x2::xs =>
+        if x1<=x2 then checkLength(x1::longest_tail(x2::xs), longest_tail(x1::xs)) 
+	    else longest_tail(x1::xs)
+  
+fun list_longest_ascend(xs: int list): int list =
+    let fun help(xs: int list, ys: int list)=
+    case xs of
+	[] => ys
+	|
+	x1::xs =>
+	let val zs = longest_tail(x1::xs)
+	    in
+        if list_length(zs) > list_length(ys)
+        then help(xs,zs)
+        else help(xs,ys)
+	    end
+    in
+        help(xs,[])
+    end
