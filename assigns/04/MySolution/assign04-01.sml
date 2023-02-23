@@ -29,4 +29,10 @@ end
 
 (* ****** ****** *)
 
+
+val isPrime: int-> bool = fn(n:int)=>
+if n<=1 then false
+else
+int1_forall (n,fn(i) => if i>=2 then n mod i <> 0 else true)
+
 (* end of [CS320-2023-Spring-assign04-01.sml] *)
