@@ -65,3 +65,19 @@ magic_triangle (n : int) : int list list = ...
 (* ****** ****** *)
 
 (* end of [CS320-2023-Spring-midterm1-magic_triangle.sml] *)
+
+fun next_row (prev: int list) : int list =
+  let
+    fun helper (x::y::xs) = (x+y)::helper(y::xs)
+      | helper _ = [1]
+  in
+    1::helper(prev@[1])
+  end
+
+fun magic_triangle (n: int) : int list list =
+  let
+    fun helper (acc, 0) = rev acc
+      | helper (acc, k) = helper((next_row (hd acc))::acc, k-1)
+  in
+    helper ([[1]], n)
+  end

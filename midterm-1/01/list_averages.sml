@@ -37,3 +37,11 @@ list_averages(xs: real list): real list = ...
 (* ****** ****** *)
 
 (* end of [CS320-2023-Spring-midterm1-list_averages.sml] *)
+
+fun list_averages (xs: real list): real list =
+    let
+        fun avg (ys, i, s) =
+            if null xs then ys
+            else avg (ys @ [s / Real.fromInt i], i + 1, s + hd xs)
+
+    in avg ([], 1, 0.0) end

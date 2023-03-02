@@ -129,3 +129,14 @@ val ans2 = bintr_balanced_nonrec(NODE(t2, t3))
 (* ****** ****** *)
 
 (* end of [CS320-2023-Spring-midterm1-balance_test_nonrec.sml] *)
+
+val bintr_balanced_nonrec =
+  fn (t0: 'a bintr) =>
+    let
+      val balanced =
+        bintr_fold(t0, fn _ => true, fn (bl, br) => bl andalso br)
+      val size_diff =
+        bintr_fold(t0, fn _ => 0, fn (sl, sr) => abs(sl - sr))
+    in
+      balanced andalso size_diff <= 1
+    end

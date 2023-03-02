@@ -36,3 +36,21 @@ list_nchoose2(xs: int list): (int * int) list = ...
 (* ****** ****** *)
 
 (* end of [CS320-2023-Spring-midterm1-list_nchoose2.sml] *)
+
+fun list_nchoose2(xs: int list): (int * int) list =
+    let
+        fun helper([], acc) = acc
+          | helper(x::xs, acc) =
+            let
+                fun insert_pairs([], pairs) = pairs
+                  | insert_pairs(y::ys, pairs) =
+                    if x <= y
+                    then insert_pairs(ys, (x, y)::pairs)
+                    else insert_pairs(ys, pairs)
+            in
+                helper(xs, insert_pairs(xs, acc))
+            end
+    in
+        helper(xs, [])
+    end
+

@@ -33,3 +33,37 @@ list_pairing
 (* ****** ****** *)
 
 (* end of [CS320-2023-Spring-midterm1-list_pairing.sml] *)
+
+fun splitAt(n, xs) =
+  let
+    fun helper(n, xs, left, right) =
+      case xs of
+        [] => (rev left, right)
+      | x::xs' =>
+          if n = 0
+          then (rev left, xs)
+          else helper(n-1, xs', x::left, right)
+  in
+    helper(n, xs, [], [])
+  end
+
+
+fun list_pairing(xs: 'a list): ('a * 'a) list * 'a option =
+  let
+    val len = length xs
+    val mid = len div 2
+    fun pairs([], _) = []
+      | pairs(_ , []) = []
+      | pairs(x::xs', y::ys') = (x, y)::pairs(xs', ys')
+    in
+      if len = 0 then
+        ([], NONE)
+      else if len mod 2 = 0 then
+        (pairs(xs, rev xs), NONE)
+      else
+        let
+          val (prefix, suffix) = splitAt((mid+1), xs)
+        in
+          (pairs(prefix, rev suffix), SOME (List.nth(xs, mid)))
+        end
+    end
