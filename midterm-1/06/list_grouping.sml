@@ -48,3 +48,29 @@ val nxs = list_grouping(int1_map_list(N, fn i => N-i))
 (* ****** ****** *)
 
 (* end of [CS320-2023-Spring-midterm1-list_grouping.sml] *)
+
+fun filter p xs =
+  let
+    fun loop [] acc = acc
+      | loop (x::xs) acc =
+          if p x then loop xs (x::acc) else loop xs acc
+  in
+    list_reverse (loop xs [])
+  end
+
+
+fun list_grouping (xs: int list): (int * int) list =
+  let
+    fun count_elem x [] = 0
+      | count_elem x (y::ys) =
+          if x = y then 1 + count_elem x ys else count_elem x ys
+    fun pairs [] = []
+      | pairs (x::xs) =
+          let
+            val n = count_elem x xs + 1
+          in
+            (n, x) :: pairs (filter (fn y => y <> x) xs)
+          end
+  in
+    pairs xs
+  end
