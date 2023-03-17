@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./assigns/02/MySolution"
+    ]
+}
