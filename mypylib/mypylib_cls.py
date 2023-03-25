@@ -93,7 +93,10 @@ class fnlist_cons(fnlist):
         return self.cons2
 # end-of-class(fnlist_cons)
 
-###########################################################################
+####################################################
+def fnlist_sing(x0):
+    return fnlist_cons(x0, fnlist_nil())
+####################################################
 
 def fnlist_print(xs):
     nx = 0
@@ -107,6 +110,8 @@ def fnlist_print(xs):
     print("]", end='')
 # end-of-[fnlist_print]
 
+####################################################
+
 def fnlist_foreach(xs, work_func):
     while(xs.ctag > 0):
         x0 = xs.cons1
@@ -114,17 +119,34 @@ def fnlist_foreach(xs, work_func):
         work_func(x0)
     return None
 
+####################################################
 def fnlist_reverse(xs):
     return \
         fnlist_foldleft \
         (xs, fnlist_nil(), lambda r0, x0: fnlist_cons(x0, r0))
-def fnlist_foldleft(xs, r0, fopr_func):
+####################################################
+def fnlist_append(xs, ys):
+    return fnlist_foldright(xs, ys, fnlist_cons)
+def fnlist_concat(xss):
+    return fnlist_foldright(xss, fnlist_nil(), fnlist_append)
+####################################################
+def fnlist_foldleft(xs, ini, fopr_func):
     return \
-        foreach_to_foldleft(fnlist_foreach)(xs, r0, fopr_func)
+        foreach_to_foldleft(fnlist_foreach)(xs, ini, fopr_func)
+def fnlist_foldright(xs, ini, fopr_func):
+    if xs.ctag == 0:
+        return ini
+    else:
+        return fopr_func\
+            (xs.cons1, fnlist_foldright(xs.cons2, ini, fopr_func))
+    # end-of-(if-then-else)
+# end-of-(fnlist_foldright(xs, ini, fopr_func))
+####################################################
 def fnlist_pylistize(xs):
     return foreach_to_pylistize(fnlist_foreach)(xs)
 def fnlist_rpylistize(xs):
     return foreach_to_rpylistize(fnlist_foreach)(xs)
+####################################################
 
 def fnlist_make_pylist(xs): return pylist_fnlistize(xs)
 
@@ -163,6 +185,15 @@ def pylist_make_fnlist(xs):
 
 ###########################################################################
 
+def pylist_concat(xss):
+    res = []
+    pylist_foreach(xss, lambda xs: res.extend(xs))
+    return res
+def pylist_append(xs, ys):
+    return pylist_concat([xs, ys])
+
+###########################################################################
+
 def pylist_iforeach(xs, iwork_func):
     return foreach_to_iforeach(pylist_foreach)(xs, iwork_func)
 
@@ -175,6 +206,30 @@ def pylist_make_ifilter(xs, itest_func):
     return iforeach_to_ifilter_pylist(pylist_iforeach)(xs, itest_func)
 def pylist_ifilter_pylist(xs, itest_func):
     return iforeach_to_ifilter_pylist(pylist_iforeach)(xs, itest_func)
+
+###########################################################################
+
+def pylist_iminimum(xs):
+    if not xs:
+        return (-1, None)    
+    imin = 0
+    xmin = xs[0]
+    for (i0, x1) in enumerate(xs[1:]):
+        if x1 < xmin:
+            xmin = x1
+            imin = i0 + 1
+    return (imin, xmin)
+
+def pylist_imaximum(xs):
+    if not xs:
+        return (-1, None)    
+    imax = 0
+    xmax = xs[0]
+    for (i0, x1) in enumerate(xs[1:]):
+        if x1 > xmax:
+            xmax = x1
+            imax = i0 + 1
+    return (imax, xmax)
 
 ###########################################################################
 
@@ -205,6 +260,8 @@ def string_make_fnlist(xs): return "".join(fnlist_pylistize(xs))
 def string_iforeach(xs, iwork_func):
     return foreach_to_iforeach(string_foreach)(xs, iwork_func)
 
+def string_imap_fnlist(xs, ifopr_func):
+    return iforeach_to_imap_fnlist(string_iforeach)(xs, ifopr_func)
 def string_imap_pylist(xs, ifopr_func):
     return iforeach_to_imap_pylist(string_iforeach)(xs, ifopr_func)
 
@@ -281,6 +338,28 @@ def foreach_to_iforeach(foreach):
 
 ###########################################################################
 
+def foreach_to_iforall(foreach):
+    class FalseExn(Exception):
+        def __init_(self):
+            return None
+    def iforall(xs, itest_func):
+        i0 = 0
+        def work_func(x0):
+            nonlocal i0
+            if itest_func(i0, x0):
+                i0 = i0 + 1
+                return None
+            else:
+                raise FalseExn
+        try:
+            foreach(xs, work_func)
+            return True
+        except FalseExn:
+            return False
+    return iforall # foreach-function is turned into forall-function
+
+###########################################################################
+
 def foreach_to_ifoldleft(foreach):
     def ifoldleft(xs, r0, ifopr_func):
         i0 = 0
@@ -349,7 +428,7 @@ def foreach_to_map_pylist(foreach):
 def foreach_to_map_fnlist(foreach):
     return \
         lambda xs, fopr_func: \
-        fnlist_make_pylist(foreach_to_map_fnlist(foreach)(xs, fopr_func))
+        fnlist_make_pylist(foreach_to_map_pylist(foreach)(xs, fopr_func))
 
 def foreach_to_map_rfnlist(foreach):
     def map_rfnlist(xs, fopr_func):
@@ -427,7 +506,105 @@ def iforeach_to_ifilter_pylist(iforeach):
 def iforeach_to_ifilter_fnlist(iforeach):
     return \
         lambda xs, itest_func: \
-        fnlist_make_pylist(iforeach_to_ifilter_fnlist(iforeach)(xs, itest_func))
+        fnlist_make_pylist(iforeach_to_ifilter_pylist(iforeach)(xs, itest_func))
+
+###########################################################################
+#
+# HX-2023-03-21: Lazy-evaluation and streams
+#
+###########################################################################
+
+class strcon:
+    ctag = -1
+    def get_ctag(self):
+        return self.ctag
+# end-of-class(strcon)
+
+class strcon_nil(strcon):
+    def __init__(self):
+        self.ctag = 0
+        return None
+# end-of-class(strcon_nil)
+
+class strcon_cons(strcon):
+    def __init__(self, cons1, cons2):
+        self.ctag = 1
+        self.cons1 = cons1
+        self.cons2 = cons2
+        return None
+    def get_cons1(self):
+        return self.cons1
+    def get_cons2(self):
+        return self.cons2
+# end-of-class(strcon_cons)
+
+###########################################################################
+
+def stream_foreach(fxs, work):
+    while(True):
+        cxs = fxs()
+        if (cxs.ctag == 0):
+            break
+        else:
+            work(cxs.cons1)
+            fxs = cxs.cons2
+        # end-of-(if(cxs.ctag==0)-then-else)
+    return None # end-of-(stream_foreach)
+
+def stream_forall(fxs, test):
+    foreach_to_forall(stream_foreach)(fxs, test)
+def stream_iforall(fxs, itest):
+    foreach_to_iforall(stream_foreach)(fxs, itest)
+
+###########################################################################
+
+def fnlist_streamize(xs):
+    def helper(xs):
+        if xs.ctag == 0:
+            return strcon_nil()
+        else:
+            return \
+                strcon_cons(xs.cons1, lambda: helper(xs.cons2))
+        # end-of-(if(xs.ctag==0)-then-else)
+    return lambda: helper(xs)
+
+###########################################################################
+
+def stream_tabulate(n0, fopr):
+    def helper1(i0):
+        return strcon_cons(fopr(i0), lambda: helper1(i0+1))
+    def helper2(i0):
+        if i0 >= n0:
+            return strcon_nil()
+        else:
+            return strcon_cons(fopr(i0), lambda: helper2(i0+1))
+        # end-of-(if(i0 >= n0)-then-else)
+    if n0 < 0:
+        return lambda: helper1(0)
+    else:
+        return lambda: helper2(0)
+    # end-of-(if(n0 < 0)-then-else)
+    
+###########################################################################
+
+def string_streamize(xs):
+    return stream_tabulate(len(xs), lambda i0: xs[i0])
+def pylist_streamize(xs):
+    return stream_tabulate(len(xs), lambda i0: xs[i0])
+def pytuple_streamize(xs):
+    return stream_tabulate(len(xs), lambda i0: xs[i0])
+
+###########################################################################
+
+def stream_make_map(fxs, fopr):
+    def helper(fxs):
+        cxs = fxs()
+        if cxs.ctag == 0:
+            return strcon_nil()
+        else:
+            return strcon_cons(fopr(cxs.cons1), lambda: helper(cxs.cons2))
+        # end-of-(if(cxs.ctag==0)-then-else)
+    return lambda: helper(fxs)
 
 ###########################################################################
 
