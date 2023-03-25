@@ -23,7 +23,6 @@ def load_color_image(filename):
     """
     Loads a color image from the given file and returns a dictionary
     representing that image.
-
     Invoked as, for example:
        i = load_color_image("test_images/cat.png")
     """
@@ -148,14 +147,80 @@ def image_blur_bbehav_color(image, ksize, bbehav):
 #    (image_blur_bbehav_color(balloons, 5, 'extend'), "OUTPUT/balloons_blurred.png")
 ####################################################
 
+def path(energy,index,ww):
+    if index < ww:
+        energy[index] = (energy[index],2)
+    elif index % ww == 0:
+        z = energy[index] + energy[index - ww][0]
+        y = energy[index] + energy[(index - ww) + 1][0]
+        if z <= y:
+            energy[index] = (z,0)
+        else:
+            energy[index] = (y,1)
+    elif (index + 1) % ww == 0:
+        x = energy[index] + energy[(index - ww) - 1][0]
+        y = energy[index] + energy[index - ww][0]
+
+        if y < x:
+            energy[index] = (y,0)
+        else:
+            energy[index] = (x, -1)
+    else:
+        x = energy[index] + energy[(index - ww) - 1][0]
+        y = energy[index] + energy[index - ww][0]
+        z = energy[index] + energy[(index - ww) + 1][0]
+
+        if x <= z and x <= y:
+            energy[index] = (x,-1)
+        elif y <= z:
+            energy[index] = (y, 0)
+        else:
+            energy[index] = (z,1)
+    return None
+
+def seam_val(energy, size, ww):
+    int1_foreach(size, lambda r: path(energy,r,ww))        
+    return energy
+
+def remove(image):
+    ww = image.width
+    hh = image.height
+    size = ww * hh
+    energy = image_edges_color(image)
+    energy_list = list(energy.pixlst)
+    seam = seam_val(energy_list, size, ww)
+    rm_list = []
+    minimum = seam[size - ww][0]
+    l = size - ww
+    for i in range(size - ww, size):
+        if seam[i][0] < minimum:
+            minimum = seam[i][0]
+            l = i
+    row = hh - 1
+    while row >= 0:
+        rm_list = pylist_append([l % ww],rm_list)
+        if seam[l][1] == 2:
+            break
+        elif seam[l][1] == -1:
+            l = (l - ww) - 1
+        elif seam[l][1] == 0:
+            l = (l - ww)
+        else:
+            l = (l - ww) + 1
+        row = row - 1
+    new_image = imgvec.image(hh, ww-1, imgvec.image_i2filter_pylist(image, lambda x, x1, r: rm_list[x] != x1))
+    return new_image
+
 def image_seam_carving_color(image, ncol):
     """
     Starting from the given image, use the seam carving technique to remove
     ncols (an integer) columns from the image. Returns a new image.
     """
+    
     assert ncol < image.width
-    energy = image_edges_color(image)
-    raise NotImplementedError
+    image = imgvec.image(image.height, image.width, list(image.pixlst))
+    final = int1_foldleft(ncol, image, lambda x,x0: remove(x))
+    return imgvec.image_make_pylist(final.height, final.width, final.pixlst)
 
 ####################################################
 # save_color_image(image_seam_carving_color(balloons, 100), "OUTPUT/balloons_seam_carving_100.png")

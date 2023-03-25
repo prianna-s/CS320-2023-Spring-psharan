@@ -48,3 +48,29 @@ ref_ifoldleft
 (* ****** ****** *)
 
 (* end of [CS320-2023-Spring-assign05-01.sml] *)
+
+fun
+ref_get_at
+(refs: 'a ref, i0:int): 'a =
+if i0 = 0 then ! refs else raise Subscript;
+
+fun
+ref_forall(refs: 'a ref, test:('a -> bool)):bool = 
+test(!refs);
+
+fun
+ref_map_list
+(refs: 'a ref, fopr: ('a) -> 'b): 'b list =
+	let val beta = fopr(!refs)
+	in [beta]
+	end;
+
+fun
+ref_foldleft
+(refs: 'a ref, res: 'r, fopr: ('r * 'a) -> 'r): 'r =
+fopr(res, !refs);
+
+fun
+ref_ifoldleft
+(refs: 'a ref, res: 'r, fopr: ('r * int * 'a) -> 'r): 'r =
+fopr(res, 0, !refs);
