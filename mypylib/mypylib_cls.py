@@ -120,15 +120,19 @@ def fnlist_foreach(xs, work_func):
     return None
 
 ####################################################
-def fnlist_reverse(xs):
-    return \
-        fnlist_foldleft \
-        (xs, fnlist_nil(), lambda r0, x0: fnlist_cons(x0, r0))
-####################################################
 def fnlist_append(xs, ys):
     return fnlist_foldright(xs, ys, fnlist_cons)
 def fnlist_concat(xss):
     return fnlist_foldright(xss, fnlist_nil(), fnlist_append)
+####################################################
+def fnlist_rappend(xs, ys):
+    while(xs.ctag > 0):
+        x1 = xs.cons1
+        xs = xs.cons2
+        ys = fnlist_cons(x1, ys)
+    return ys
+def fnlist_reverse(xs):
+    return fnlist_rappend(xs, fnlist_nil())
 ####################################################
 def fnlist_foldleft(xs, ini, fopr_func):
     return \
@@ -150,6 +154,9 @@ def fnlist_rpylistize(xs):
 
 def fnlist_make_pylist(xs): return pylist_fnlistize(xs)
 
+def fnlist_filter_pylist(xs, test_func):
+    return foreach_to_filter_pylist(fnlist_foreach)(xs, test_func)
+
 ###########################################################################
 
 def pylist_foreach(xs, work_func):
@@ -167,7 +174,7 @@ def pylist_make_map(xs, fopr_func):
 def pylist_map_pylist(xs, fopr_func):
     return foreach_to_map_pylist(pylist_foreach)(xs, fopr_func)
 
-def pylist_filter(xs, test_func):
+def pylist_make_filter(xs, test_func):
     return foreach_to_filter_pylist(pylist_foreach)(xs, test_func)
 def pylist_filter_pylist(xs, test_func):
     return foreach_to_filter_pylist(pylist_foreach)(xs, test_func)
@@ -551,10 +558,29 @@ def stream_foreach(fxs, work):
         # end-of-(if(cxs.ctag==0)-then-else)
     return None # end-of-(stream_foreach)
 
+def stream_get_at(fxs, i0):
+    while(True):
+        cxs = fxs()
+        if (cxs.ctag == 0):
+            raise IndexError
+        else:
+            if i0 <= 0:
+                return cxs.cons1
+            else:
+                i0 = i0 - 1
+                fxs = cxs.cons2
+    return None # This is deadcode
+
+###########################################################################
+
 def stream_forall(fxs, test):
-    foreach_to_forall(stream_foreach)(fxs, test)
+    return foreach_to_forall(stream_foreach)(fxs, test)
+
 def stream_iforall(fxs, itest):
-    foreach_to_iforall(stream_foreach)(fxs, itest)
+    return foreach_to_iforall(stream_foreach)(fxs, itest)
+
+def stream_iforeach(fxs, iwork):
+    return foreach_to_iforeach(stream_foreach)(fxs, iwork)
 
 ###########################################################################
 
@@ -602,9 +628,132 @@ def stream_make_map(fxs, fopr):
         if cxs.ctag == 0:
             return strcon_nil()
         else:
-            return strcon_cons(fopr(cxs.cons1), lambda: helper(cxs.cons2))
+            return strcon_cons\
+                (fopr(cxs.cons1), lambda: helper(cxs.cons2))
         # end-of-(if(cxs.ctag==0)-then-else)
     return lambda: helper(fxs)
+
+###########################################################################
+
+def stream_make_filter(fxs, test):
+    def helper(fxs):
+        while(True):
+            cxs = fxs()
+            if cxs.ctag == 0:
+                return strcon_nil()
+            else:
+                cx1 = cxs.cons1
+                fxs = cxs.cons2
+                if test(cx1):
+                    return strcon_cons(cx1, lambda: helper(fxs))
+            # end-of-(if(cxs.ctag==0)-then-else)
+    return lambda: helper(fxs)
+
+###########################################################################
+
+import queue
+
+###########################################################################
+
+def gtree_bfs(nxs, fchlds):
+    def helper(qnxs):
+        if qnxs.empty():
+            return strcon_nil()
+        else:
+            nx1 = qnxs.get()
+            # print("gtree_bfs: helper: nx1 = ", nx1)
+            for nx2 in fchlds(nx1):
+                qnxs.put(nx2)
+            return strcon_cons(nx1, lambda: helper(qnxs))
+        # end-of-(if(qnxs.empty())-then-else)
+    qnxs = queue.Queue()
+    for nx1 in nxs:
+        qnxs.put(nx1)
+    return lambda: helper(qnxs)
+
+###########################################################################
+
+def gtree_dfs(nxs, fchlds):
+    def helper(qnxs):
+        if qnxs.empty():
+            return strcon_nil()
+        else:
+            nx1 = qnxs.get()
+            # print("gtree_dfs: helper: nx1 = ", nx1)
+            for nx2 in reversed(fchlds(nx1)):
+                qnxs.put(nx2)
+            return strcon_cons(nx1, lambda: helper(qnxs))
+        # end-of-(if(qnxs.empty())-then-else)
+    qnxs = queue.LifoQueue()
+    for nx1 in nxs:
+        qnxs.put(nx1)
+    return lambda: helper(qnxs)
+
+###########################################################################
+
+def graph_bfs(nxs, fnexts):
+    visited = set()
+    def helper(qnxs):
+        if qnxs.empty():
+            return strcon_nil()
+        else:
+            nx1 = qnxs.get()
+            # print("gtree_bfs: helper: nx1 = ", nx1)
+            for nx2 in fnexts(nx1):
+                if not nx2 in visited:
+                    qnxs.put(nx2)
+                    visited.add(nx2)
+            return strcon_cons(nx1, lambda: helper(qnxs))
+        # end-of-(if(qnxs.empty())-then-else)
+    qnxs = queue.Queue()
+    for nx0 in nxs:
+        qnxs.put(nx0)
+        visited.add(nx1)
+    return lambda: helper(qnxs)
+
+###########################################################################
+
+def graph_dfs(nxs, fnexts):
+    visited = set()
+    def helper(qnxs):
+        if qnxs.empty():
+            return strcon_nil()
+        else:
+            nx1 = qnxs.get()
+            # print("gtree_dfs: helper: nx1 = ", nx1)
+            for nx2 in reversed(fnexts(nx1)):
+                if not nx2 in visited:
+                    qnxs.put(nx2)
+                    visited.add(nx2)
+            return strcon_cons(nx1, lambda: helper(qnxs))
+        # end-of-(if(qnxs.empty())-then-else)
+    qnxs = queue.LifoQueue()
+    for nx0 in nxs:
+        qnxs.put(nx0)
+        visited.add(nx1)
+    return lambda: helper(qnxs)
+
+###########################################################################
+
+def gpath_bfs(nxs, fnexts):
+    visited = set()
+    def helper(qpths):
+        if qpths.empty():
+            return strcon_nil()
+        else:
+            pth1 = qpths.get()
+            # print("gtree_bfs: helper: nx1 = ", nx1)
+            for nx2 in fnexts(pth1[-1]):
+                if not nx2 in visited:
+                    visited.add(nx2)
+                    qpths.put(pth1 + (nx2,))
+            return strcon_cons(pth1, lambda: helper(qpths))
+        # end-of-(if(qnxs.empty())-then-else)
+    qpths = queue.Queue()
+    for nx0 in nxs:
+        visited.add(nx0)
+        qpths.put(tuple([nx0]))
+    return lambda: helper(qpths)
 
 ###########################################################################
 
