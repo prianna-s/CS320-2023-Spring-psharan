@@ -70,9 +70,29 @@ end (* end of [char_of_digit] *)
 (* ****** ****** *)
 
 fun
-print_int(x: int) = print(Int.toString(x))
+print_int
+(x: int) = print(Int.toString(x))
 fun
-print_char(c: char) = print(String.str(c))
+print_char
+(c: char) = print( String.str(c) )
+
+(* ****** ****** *)
+fun
+print_bool
+(x: bool) = print(Bool.toString(x))
+(* ****** ****** *)
+
+fun
+print_string(cs: string) = print(cs)
+
+(* ****** ****** *)
+
+fun
+print_newline() = print("\n")
+fun
+println(cs) = (print(cs); print_newline())
+fun
+println_string(cs) = (print(cs); print_newline())
 
 (* ****** ****** *)
 
@@ -733,6 +753,24 @@ type 'a stream = (unit -> 'a strcon)
 (* ****** ****** *)
 
 fun
+strcon_head
+(cxs: 'a strcon) =
+case cxs of
+strcon_nil => raise Empty
+|
+strcon_cons(cx1, fxs) => cx1
+
+fun
+strcon_tail
+(cxs: 'a strcon) =
+case cxs of
+strcon_nil => raise Empty
+|
+strcon_cons(cx1, fxs) => fxs
+
+(* ****** ****** *)
+
+fun
 stream_nil
 ((*void*)) =
   fn () => strcon_nil(*void*)
@@ -742,6 +780,17 @@ stream_cons
 , fxs
 : 'a stream) =
    fn () => strcon_cons(x1, fxs)
+
+(* ****** ****** *)
+
+fun
+stream_head
+( fxs
+: 'a stream) = strcon_head(fxs())
+fun
+stream_tail
+( fxs
+: 'a stream) = strcon_tail(fxs())
 
 (* ****** ****** *)
 
@@ -894,6 +943,10 @@ in
 end (* end-of-[stream_iforeach(fxs, iwork)] *)
 
 (* ****** ****** *)
+val
+stream_length = fn(fxs) =>
+foreach_to_length(stream_foreach)(fxs)
+(* ****** ****** *)
 
 fun
 stream_append
@@ -950,6 +1003,80 @@ case fxs() of
   strcon_cons(x1, stream_make_filter(fxs, test))
 )
 
+(* ****** ****** *)
+
+fun
+stream_make_imap
+( fxs: 'a stream
+, ifopr
+: int * 'a -> 'b) =
+let
+(* ****** ****** *)
+fun
+helper(fxs, i0: int) = fn() =>
+case fxs() of
+strcon_nil =>
+strcon_nil(*void*)
+|
+strcon_cons(x1, fxs) =>
+strcon_cons
+( ifopr(i0, x1)
+, helper(fxs, i0+1)) in helper(fxs, 0)
+(* ****** ****** *)
+end (* end-of-[stream_make_imap(fxs, ifopr)] *)
+
+(* ****** ****** *)
+
+fun
+stream_make_ifilter
+( fxs: 'a stream
+, itest: int * 'a -> bool): 'a stream =
+let
+(* ****** ****** *)
+fun
+helper
+(fxs, i0: int) = fn() =>
+case fxs() of
+strcon_nil => strcon_nil
+|
+strcon_cons(x1, fxs) =>
+if
+not(itest(i0, x1))
+then helper(fxs, i0+1)()
+else
+strcon_cons
+  (x1, helper(fxs, i0+1)) in helper(fxs, 0)
+(* ****** ****** *)
+end (* end-of-[stream_make_ifilter(fxs, ifopr)] *)
+
+(* ****** ****** *)
+(*
+HX-2023-04-04:
+For merging two ordered streams
+*)
+fun
+stream_merge2
+( fxs1: 'a stream
+, fxs2: 'a stream
+, lte3: 'a * 'a -> bool): 'a stream = fn() =>
+(
+case fxs1() of
+  strcon_nil => fxs2()
+| strcon_cons(x1, fxs1) =>
+(
+case fxs2() of
+strcon_nil =>
+strcon_cons(x1, fxs1)
+|
+strcon_cons(x2, fxs2) =>
+if
+lte3(x1, x2)
+then strcon_cons
+(x1, stream_merge2(fxs1, stream_cons(x2, fxs2), lte3))
+else strcon_cons
+(x2, stream_merge2(stream_cons(x1, fxs1), fxs2, lte3))
+)
+)
 (* ****** ****** *)
 
 (* end of [BUCASCS320-2023-Spring-mysmlib-cls.sml] *)
