@@ -32,3 +32,30 @@ mytree_dfs_streamize(t0: 'a mytree): 'a stream = ...
 (* ****** ****** *)
 
 (* end of [CS320-2023-Spring-midterm2-02.sml] *)
+
+datatype 'a mytree =
+  mytree_node of 'a * ('a mytree list)
+
+(* ****** ****** *)
+
+
+fun mytree_dfs_streamize(t0: 'a mytree): 'a stream = 
+
+let
+
+    fun dfs_helper(stack: 'a mytree list): 'a strcon =
+
+      case stack of
+
+        [] => strcon_nil
+
+      | mytree_node(value, children)::rest =>
+
+        strcon_cons(value, fn () => dfs_helper(children @ rest))
+  in
+
+    fn () => dfs_helper([t0])
+    
+  end
+
+

@@ -24,3 +24,15 @@ stream_zipstrm
 (* ****** ****** *)
 
 (* end of [CS320-2023-Spring-midterm2-03.sml] *)
+
+fun
+stream_zipstrm( fxss: 'a stream stream): 'a stream stream= fn() =>
+let
+   fun helper(xs, x) =
+       let val iter = foreach_to_foldleft(stream_foreach)(xs, fn() => strcon_nil, fn(a, strm) => stream_append(a, fn() => strcon_cons(stream_get_at(strm, x), fn() => strcon_nil)))
+       in
+	  strcon_cons(iter, fn() => helper(xs, x+1))
+        end handle Subscript => strcon_nil
+    in
+        helper(fxss,0)
+    end

@@ -28,3 +28,18 @@ stream_drawdowns(fxs: int stream): int list stream = ... *)
 
 
 (* end of [CS320-2023-Spring-midterm2-04.sml] *)
+
+fun stream_drawdowns(fxs: int stream): int list stream =
+  let
+    fun helper(curr, fxs') =
+      case (fxs' ()) of
+        strcon_nil => strcon_cons(curr, fn() => strcon_nil)
+      | strcon_cons(x, fxs'') =>
+          if x <= hd curr
+          then helper(x::curr, fxs'')
+          else strcon_cons(curr, fn() => 
+                  helper(x::curr, fxs'')
+                  @ helper(curr, fxs'))
+  in
+    helper([], fxs)
+  end
