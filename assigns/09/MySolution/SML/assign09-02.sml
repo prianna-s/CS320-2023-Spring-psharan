@@ -36,3 +36,25 @@ fgenerator_make_stream(fxs: 'a stream): 'a fgenerator = ...
 (* ****** ****** *)
 
 (* end of [CS320-2023-Spring-assigns-assign09-02.sml] *)
+
+fun fgenerator_make_stream(fxs: 'a stream): 'a fgenerator =
+    let
+        fun bloop(fxs: 'a stream, ret0, cret) = 
+            case fxs() of
+            strcon_nil => 
+                let
+                    val () = generator_yield(NONE, ret0, cret)
+                in
+                    NONE
+                end
+            | 
+            strcon_cons(x, fxs) => 
+                let
+                    val () = generator_yield(SOME(x), ret0, cret)
+                in
+                    bloop(fxs, ret0, cret)
+                end
+    in
+        generator_make_fun(fn(ret0, cret) => bloop(fxs, ret0, cret))
+    end;
+
